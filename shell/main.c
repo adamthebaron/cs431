@@ -22,17 +22,53 @@ changedir(char *dir) {
 	return 0;
 }
 
+
+/* tokenize tokenizes a string and places it in tokstr
+ * return 0 == success
+ * return -1 == failure but it prolly wont send this
+ */
+int
+tokenize(char *str, int *count, char **tokstr) {
+	char *curtok;
+
+	curtok = strtok(str, " ");
+	printf("curtok: %s\n", curtok);
+	*tokstr = curtok;
+	printf("tokstr[%d]: %s\n", *count, *tokstr);
+	*tokstr++;
+	*count++;
+	while(curtok != NULL) {
+		*tokstr = strtok(NULL, " ");
+		printf("curtok: %s\n", *tokstr);
+		*tokstr++;
+		*count++;
+	}
+	return 0;
+}
+
 int
 main(int argc, char **argv) {
-	char* promptline, curtok, str;
-	char *args[];
+	char *promptline;
+	char *args[ARGSIZE];
+	char **tokstr;
 	int count;
 
 	while (1) {
+		count = 0;
 		promptline = malloc(PROMPTLINE * sizeof(char));
-		printf("% ");
-		fgets(&promptline, PROMPTLINE, stdin);
-
+		printf("allocated memory for prompt\n");
+		tokstr = malloc(ARGSIZE * sizeof(char*));
+		printf("allocated memory for tokstr\n");
+		for (int i = 0; i < ARGSIZE; i++) {
+			*tokstr = malloc(ARGSIZE * sizeof(char));
+			*tokstr++;
+		}
+		printf("allocated memory for tokstr[]\n");
+		printf("$ ");
+		fgets(promptline, PROMPTLINE, stdin);
+		if (tokenize(promptline, &count, tokstr) == -1)
+			return -1;
+		
 	}
 
 	return 0;
