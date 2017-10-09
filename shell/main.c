@@ -33,16 +33,18 @@ tokenize(char *str, int *count, char **tokstr) {
 
 	curtok = strtok(str, " ");
 	printf("curtok: %s\n", curtok);
-	**tokstr = curtok;
+	*tokstr = curtok;
 	printf("tokstr[%d]: %s\n", *count, **tokstr);
 	*tokstr++;
 	*count++;
-	while(*curtok != NULL) {
-		**tokstr = strtok(NULL, " ");
+
+	while(*tokstr != NULL) {
+		*tokstr = strtok(NULL, " ");
 		printf("tokstr: %s\n", **tokstr);
 		*tokstr++;
 		*count++;
 	}
+
 	return 0;
 }
 
@@ -59,17 +61,19 @@ main(int argc, char **argv) {
 		printf("allocated memory for prompt\n");
 		tokstr = malloc(ARGSIZE * sizeof(char*));
 		printf("allocated memory for tokstr\n");
-		for (int i = 0; i < ARGSIZE; i++) {
-			*tokstr = malloc(ARGSIZE * sizeof(char));
-			*tokstr++;
+
+		for (int i = 0; i < ARGSIZE; ++i) {
+			(*tokstr)[i] = malloc(ARGSIZE * sizeof(char));
 		}
+
 		printf("allocated memory for tokstr[]\n");
 		printf("$ ");
 		fgets(promptline, PROMPTLINE, stdin);
 		printf("user gave: %s\n", promptline);
+
 		if (tokenize(promptline, &count, tokstr) == -1)
 			return -1;
-		
+
 	}
 
 	return 0;
