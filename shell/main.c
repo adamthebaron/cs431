@@ -8,15 +8,15 @@
 
 #include "main.h"
 
-/* changedir moves cwd from cwd to dir,
+/* builtincd moves cwd from cwd to dir,
  * or $HOME if NULL.
  * return 0 == success
  * return -1 == failure
  */
 int
-changedir(char *dir) {
+builtincd (char *dir) {
 	if (chdir(dir) == -1) {
-		sprintf(stderr, "changedir(): %s\n", strerror(errno));
+		sprintf(stderr, "builtincd(): %s\n", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -50,16 +50,86 @@ tokenize(char *str, int i, char **tokstr) {
 	return 0;
 }
 
-/* chprompt stores s in prompt p
-*/
+/* builtin stores val v in
+ * shell variable k
+ */
 int
-chprompt(char *p, char *s) {
-	strcpy(p, s);
+builtinset(char *v, char *k) {
+	
+}
+
+
+/* parse parses the tokens and executes
+ * subprocesses accordingly
+ * return 1 == exit shell
+ * return 0 == success
+ * return -1 == failure
+ * TODO: does it really need to be this big
+ */
+int
+parse(char **tokstr) {
+	if (!strcmp(tokstr[0], "cd")) {
+		switch(fork()) {
+			/* child */
+			case 0:
+				tokstr[1] == NULL ? 
+					builtincd(getenv("HOME")) : 
+				builtincd(tokstr[1]);
+				break;
+			case -1:
+				return -1;
+			/* parent */
+			default:
+				wait(NULL);
+				break;
+		}
+	} else if (!strcmp(tokstr[0], "echo")) {
+		switch(fork()) {
+			/* child */
+			case 0:
+				builtinecho(&tokstr[1]);
+				break;
+			case -1:
+				return -1;
+			/* parent */
+			default:
+				wait(NULL);
+				break;
+		}
+	} else if (!strcmp(tokstr[0], "exit")) {
+		return 1;
+	} else if (!strcmp(tokstr[0], "help")) {
+		switch(fork()) {
+			/* child */
+			case 0:
+				builtinhelp();
+				break;
+			case -1:
+				return -1;
+			/* parent */
+			default:
+				wait(NULL);
+				break;
+		}
+	} else if (!strcmp(tokstr[0], "set")) {
+		switch(fork()) {
+			/* child */
+			case 0:
+				builtinset(tokstr[1]);
+				break;
+			case -1:
+				return -1;
+			/* parent */
+			default:
+				wait(NULL);
+				break;
+		}
+	}
 }
 
 int
 main(int argc, char **argv) {
-	char* prompt, promptline;
+	char *prompt, *promptline;
 	char *args[ARGSIZE];
 	char **tokstr;
 	int count;
@@ -78,16 +148,17 @@ main(int argc, char **argv) {
 		printf("%s ", prompt);
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
-		printf("got fgets\n");
-		printf("user gave: %s\n", promptline);
 
 		if (tokenize(promptline, count, tokstr) == -1)
 			return -1;
+		
+		if(parse(tokstr) == -1)
+			return -1;
 	}
 
-	//
+	//im gonna bomb like vietnam under the same name tame one
 	free(prompt);
-	free(promptline);
+	free(promptline);	
 	for (int i = 0; i < ARGSIZE; i++)
 		free(tokstr[i]);
 	free(tokstr);
