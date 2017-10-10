@@ -67,20 +67,17 @@ main(int argc, char **argv) {
 	while (1) {
 		count = 0;
 		promptline = malloc(PROMPTLINE * sizeof(char));
-		printf("allocated memory for promptline\n");
 		prompt = malloc(ARGSIZE * sizeof(char));
-		printf("allocated memory for prompt\n");
-		strcpy(prompt, "$");
 		tokstr = malloc(ARGSIZE * sizeof(char*));
-		printf("allocated memory for tokstr\n");
 
 		for (int i = 0; i < ARGSIZE; ++i) {
 			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 		}
 
-		printf("allocated memory for tokstr[]\n");
+		strcpy(prompt, "$");
 		printf("%s ", prompt);
-		fgets(promptline, PROMPTLINE, stdin);
+		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
+			sprintf(stderr, "fgets(): %s\n", strerror(errno));
 		printf("got fgets\n");
 		printf("user gave: %s\n", promptline);
 
