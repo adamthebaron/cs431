@@ -1,12 +1,17 @@
-#include <string.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-
 #include "main.h"
+
+void
+initshellvar(vars) {
+	for (int i = 0; i < 3; i++) {
+		vars[i]->name = malloc(ARGSIZE * sizeof(char));
+		strcpy(vars[i]->name, shellvarname[i]);
+	}
+
+	vars[1]->val = "$";
+	vars[2]->val = getenv("HOME");
+	vars[3]->val = "\x031"
+	return;
+}
 
 /* builtincd moves cwd from cwd to dir,
  * or $HOME if NULL.
@@ -55,7 +60,7 @@ tokenize(char *str, int i, char **tokstr) {
  */
 int
 builtinset(char *v, char *k) {
-	
+
 }
 
 
@@ -115,7 +120,20 @@ parse(char **tokstr) {
 		switch(fork()) {
 			/* child */
 			case 0:
-				builtinset(tokstr[1]);
+				//builtinset(tokstr[1]);
+				break;
+			case -1:
+				return -1;
+			/* parent */
+			default:
+				wait(NULL);
+				break;
+		}
+	} else {
+		switch(fork()) {
+			/* child */
+			case 0:
+				execvp(tokstr[0], &tokstr[1]);
 				break;
 			case -1:
 				return -1;
@@ -133,7 +151,9 @@ main(int argc, char **argv) {
 	char *args[ARGSIZE];
 	char **tokstr;
 	int count;
+	Tshellvar *shellvars[3];
 
+	initshellvar(shellvars);
 	while (1) {
 		count = 0;
 		promptline = malloc(PROMPTLINE * sizeof(char));

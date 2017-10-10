@@ -1,3 +1,11 @@
+#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
 #define PROMPTLINE 65536
 #define ARGSIZE 1024
 
@@ -9,10 +17,30 @@ const char *builtin[] = {
 	"set"
 };
 
-const char *shellvar[] = {
+const char *shellvarname[] = {
 	"PROMPT",
 	"HOME",
 	"COLOR"
+};
+
+typedef struct tshellvar {
+	char *name;
+	char val[ARGSIZE];
+} Tshellvar;
+
+Tshellvar *defshellvar[3] = {
+	{
+		"PROMPT",
+		"$"
+	},
+	{
+		"HOME",
+		""
+	},
+	{
+		"COLOR",
+		""
+	}
 };
 
 int builtincd(char *dir);
@@ -20,4 +48,5 @@ int builtinecho(char **args);
 int builtinhelp(void);
 int builtinset(char *p, char *s);
 int tokenize(char *str, int count, char **tokstr);
+void initshellvar(Tshellvar *vars[3]);
 void about(void);
