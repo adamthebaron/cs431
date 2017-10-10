@@ -28,21 +28,23 @@ changedir(char *dir) {
  * return -1 == failure but it prolly wont send this
  */
 int
-tokenize(char *str, int *count, char **tokstr) {
+tokenize(char *str, int i, char **tokstr) {
 	char *curtok;
 
 	curtok = strtok(str, " ");
 	printf("curtok: %s\n", curtok);
-	*tokstr = curtok;
-	printf("tokstr[%d]: %s\n", *count, **tokstr);
+	tokstr[i] = curtok;
+	printf("tokstr[]: %s\n", tokstr[i]);
 	*tokstr++;
-	*count++;
+	i++;
+	printf("before loop\n");
 
-	while(*tokstr != NULL) {
-		*tokstr = strtok(NULL, " ");
-		printf("tokstr: %s\n", **tokstr);
-		*tokstr++;
-		*count++;
+	for(;;i++) {
+		printf("in loop\n");
+		tokstr[i] = strtok(NULL, " ");
+		if (tokstr[i] == NULL)
+			break;
+		printf("tokstr: %s\n", tokstr[i]);
 	}
 
 	return 0;
@@ -63,7 +65,7 @@ main(int argc, char **argv) {
 		printf("allocated memory for tokstr\n");
 
 		for (int i = 0; i < ARGSIZE; ++i) {
-			(*tokstr)[i] = malloc(ARGSIZE * sizeof(char));
+			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 		}
 
 		printf("allocated memory for tokstr[]\n");
@@ -71,10 +73,13 @@ main(int argc, char **argv) {
 		fgets(promptline, PROMPTLINE, stdin);
 		printf("user gave: %s\n", promptline);
 
-		if (tokenize(promptline, &count, tokstr) == -1)
+		if (tokenize(promptline, count, tokstr) == -1)
 			return -1;
-
 	}
 
+	free(promptline);
+	for (int i = 0; i < ARGSIZE; i++)
+		free(tokstr[i]);
+	free(tokstr);
 	return 0;
 }
