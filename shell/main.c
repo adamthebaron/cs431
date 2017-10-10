@@ -46,13 +46,20 @@ tokenize(char *str, int i, char **tokstr) {
 			break;
 		printf("tokstr: %s\n", tokstr[i]);
 	}
-
+	printf("num of args: %d\n", i);
 	return 0;
+}
+
+/* chprompt stores s in prompt p
+*/
+int
+chprompt(char *p, char *s) {
+	strcpy(p, s);
 }
 
 int
 main(int argc, char **argv) {
-	char *promptline;
+	char* prompt, promptline;
 	char *args[ARGSIZE];
 	char **tokstr;
 	int count;
@@ -60,7 +67,10 @@ main(int argc, char **argv) {
 	while (1) {
 		count = 0;
 		promptline = malloc(PROMPTLINE * sizeof(char));
+		printf("allocated memory for promptline\n");
+		prompt = malloc(ARGSIZE * sizeof(char));
 		printf("allocated memory for prompt\n");
+		strcpy(prompt, "$");
 		tokstr = malloc(ARGSIZE * sizeof(char*));
 		printf("allocated memory for tokstr\n");
 
@@ -69,14 +79,17 @@ main(int argc, char **argv) {
 		}
 
 		printf("allocated memory for tokstr[]\n");
-		printf("$ ");
+		printf("%s ", prompt);
 		fgets(promptline, PROMPTLINE, stdin);
+		printf("got fgets\n");
 		printf("user gave: %s\n", promptline);
 
 		if (tokenize(promptline, count, tokstr) == -1)
 			return -1;
 	}
 
+	//
+	free(prompt);
 	free(promptline);
 	for (int i = 0; i < ARGSIZE; i++)
 		free(tokstr[i]);
