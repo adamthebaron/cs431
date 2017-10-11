@@ -25,7 +25,7 @@ const char *shellvarname[] = {
 
 typedef struct tshellvar {
 	char *name;
-	char val[ARGSIZE];
+	char *val;
 } Tshellvar;
 
 Tshellvar *defshellvar[3] = {

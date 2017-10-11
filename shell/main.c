@@ -1,15 +1,17 @@
 #include "main.h"
 
 void
-initshellvar(vars) {
+initshellvar(Tshellvar *vars[3]) {
 	for (int i = 0; i < 3; i++) {
+		vars[i] = malloc(sizeof(Tshellvar));
 		vars[i]->name = malloc(ARGSIZE * sizeof(char));
+		vars[i]->val = malloc(ARGSIZE * sizeof(char));
 		strcpy(vars[i]->name, shellvarname[i]);
 	}
 
-	vars[1]->val = "$";
-	vars[2]->val = getenv("HOME");
-	vars[3]->val = "\x031"
+	strcpy(vars[0]->val, "$");
+	strcpy(vars[1]->val, getenv("HOME"));
+	strcpy(vars[2]->val, "\x031");
 	return;
 }
 
@@ -18,7 +20,6 @@ initshellvar(vars) {
  * return 0 == success
  * return -1 == failure
  */
-int
 builtincd (char *dir) {
 	if (chdir(dir) == -1) {
 		sprintf(stderr, "builtincd(): %s\n", strerror(errno));
@@ -55,7 +56,7 @@ tokenize(char *str, int i, char **tokstr) {
 	return 0;
 }
 
-/* builtin stores val v in
+/* builtinset stores val v in
  * shell variable k
  */
 int
@@ -63,6 +64,19 @@ builtinset(char *v, char *k) {
 
 }
 
+/* builtinecho prints args to stdout
+ */
+int
+builtinecho(char **args) {
+
+}
+
+/* builtinhelp prints help to stdout
+ */
+int
+builtinhelp(void) {
+
+}
 
 /* parse parses the tokens and executes
  * subprocesses accordingly
@@ -177,6 +191,9 @@ main(int argc, char **argv) {
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
+	for (int i = 0; i < 3; i++)
+		free(shellvars[i]);
+	free(shellvars);
 	free(prompt);
 	free(promptline);	
 	for (int i = 0; i < ARGSIZE; i++)
