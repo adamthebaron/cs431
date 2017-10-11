@@ -38,21 +38,15 @@ tokenize(char *str, int i, char **tokstr) {
 	char *curtok;
 
 	curtok = strtok(str, " ");
-	printf("curtok: %s\n", curtok);
 	tokstr[i] = curtok;
-	printf("tokstr[]: %s\n", tokstr[i]);
 	*tokstr++;
 	i++;
-	printf("before loop\n");
 
 	for(;;i++) {
-		printf("in loop\n");
 		tokstr[i] = strtok(NULL, " ");
 		if (tokstr[i] == NULL)
 			break;
-		printf("tokstr: %s\n", tokstr[i]);
 	}
-	printf("num of args: %d\n", i);
 	return 0;
 }
 
@@ -87,10 +81,13 @@ builtinhelp(void) {
  */
 int
 parse(char **tokstr) {
-	if (!strcmp(tokstr[0], "cd")) {
+	printf("parsing out %s\n", tokstr[0]);
+	if (strcmp(tokstr[0], "cd") == 0) {
+		printf("calling builtincd\n");
 		switch(fork()) {
 			/* child */
 			case 0:
+				printf("builtincd is passed %s\n", tokstr[1]);
 				tokstr[1] == NULL ? 
 					builtincd(getenv("HOME")) : 
 				builtincd(tokstr[1]);
@@ -102,7 +99,8 @@ parse(char **tokstr) {
 				wait(NULL);
 				break;
 		}
-	} else if (!strcmp(tokstr[0], "echo")) {
+	} else if (strcmp(tokstr[0], "echo") == 0) {
+		printf("calling builtinecho\n");
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -115,9 +113,11 @@ parse(char **tokstr) {
 				wait(NULL);
 				break;
 		}
-	} else if (!strcmp(tokstr[0], "exit")) {
+	} else if (strcmp(tokstr[0], "exit") == 0) {
+		printf("calling builtinexit\n");
 		return 1;
-	} else if (!strcmp(tokstr[0], "help")) {
+	} else if (strcmp(tokstr[0], "help") == 0) {
+		printf("calling builtinhelp\n");
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -130,7 +130,8 @@ parse(char **tokstr) {
 				wait(NULL);
 				break;
 		}
-	} else if (!strcmp(tokstr[0], "set")) {
+	} else if (strcmp(tokstr[0], "set") == 0) {
+		printf("calling builtinset\n");
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -144,6 +145,7 @@ parse(char **tokstr) {
 				break;
 		}
 	} else {
+		printf("calling %s\n", tokstr[0]);
 		switch(fork()) {
 			/* child */
 			case 0:

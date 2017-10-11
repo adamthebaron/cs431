@@ -50,3 +50,4 @@ int builtinset(char *p, char *s);
 int tokenize(char *str, int count, char **tokstr);
 void initshellvar(Tshellvar *vars[3]);
 void about(void);
+int main(int argc, char **argv);
