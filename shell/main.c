@@ -81,7 +81,7 @@ builtinhelp(void) {
  */
 int
 parse(char **tokstr) {
-	printf("parsing out %s\n", tokstr[0]);
+	printf("parsing out %s newline\n", tokstr[0]);
 	if (strcmp(tokstr[0], "cd") == 0) {
 		printf("calling builtincd\n");
 		switch(fork()) {
@@ -185,6 +185,7 @@ main(int argc, char **argv) {
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
 
+		promptline[strcspn(promptline, "\n")] = 0;
 		if (tokenize(promptline, count, tokstr) == -1)
 			return -1;
 		
