@@ -4,9 +4,8 @@ Tshellvar *shellvars[3];
 
 void
 printtokstr(char **tokstr, int *count) {
-	printf("printtokstr(): count = %d\ntokstr: ", *count);
+	printf("count = %d\ntokstr: ", *count);
 	for(int i = 0; i < *count; i++) {
-		printf("i = %d\n", i);
 		printf("%s", tokstr[i]);
 	}
 
@@ -51,13 +50,11 @@ int
 tokenize(char *str, int *i, char **tokstr) {
 	char *curtok;
 
-	printf("tokenize(): i = %d\n", *i);
 	curtok = strtok(str, " ");
 	tokstr[*i] = curtok;
-	*tokstr++;
-	*i++;
+	(*i)++;
 
-	for(;;i++) {
+	for(;;(*i)++) {
 		tokstr[*i] = strtok(NULL, " ");
 		if (tokstr[*i] == NULL)
 			break;
@@ -104,8 +101,8 @@ builtinhelp(void) {
 	set: set shell vars (PROMPT HOME COLOR)\n \
 	env:\n \
 		PROMPT: %s\n \
-		HOME: %s\n \
-		COLOR: %s\n \
+		HOME:   %s\n \
+		COLOR:  %s\n \
 				  made by adam\n", shellvars[0]->val,
 								   shellvars[1]->val,
 								   shellvars[2]->val);
@@ -118,76 +115,39 @@ builtinhelp(void) {
  * return 1 == exit shell
  * return 0 == success
  * return -1 == failure
- * TODO: does it really need to be this big
  */
 int
 parse(char **tokstr, int *count) {
-	printf("parse(): count = %d\n", *count);
-	printtokstr(tokstr, count);
+	//printtokstr(tokstr, count);
 	
-	if (strcmp(tokstr[0], "cd") == 0) {
-		switch(fork()) {
-			/* child */
-			case 0:
-				tokstr[1] == NULL ? 
-					builtincd(shellvars[1]->val) : 
-				builtincd(tokstr[1]);
-				break;
-			case -1:
-				return -1;
-			/* parent */
-			default:
-				wait(NULL);
-				break;
-		}
-	} else if (strcmp(tokstr[0], "echo") == 0) {
-		switch(fork()) {
-			/* child */
-			case 0:
-				builtinecho(&tokstr[1]);
-				break;
-			case -1:
-				return -1;
-			/* parent */
-			default:
-				wait(NULL);
-				break;
-		}
-	} else if (strcmp(tokstr[0], "exit") == 0) {
+	if (!strcmp(tokstr[0], "cd"))
+		tokstr[1] == NULL ? 
+			builtincd(shellvars[1]->val) : 
+		builtincd(tokstr[1]);
+
+	else if (!strcmp(tokstr[0], "echo"))
+		builtinecho(&tokstr[1]);
+	
+	else if (!strcmp(tokstr[0], "exit"))
 		return 1;
-	} else if (strcmp(tokstr[0], "help") == 0) {
+	
+	else if (!strcmp(tokstr[0], "help"))
+		builtinhelp();
+	
+	else if (!strcmp(tokstr[0], "set"))
+		if (tokstr[1] == NULL || tokstr[2] == NULL)
+			return -1;
+		else
+			builtinset(tokstr[1], tokstr[2]);
+	
+	else {
 		switch(fork()) {
 			/* child */
 			case 0:
-				builtinhelp();
-				break;
-			case -1:
-				return -1;
-			/* parent */
-			default:
-				wait(NULL);
-				break;
-		}
-	} else if (strcmp(tokstr[0], "set") == 0) {
-		switch(fork()) {
-			printf("calling builtinset with %s %s %s\n",
-					tokstr[0], tokstr[1], tokstr[2]);
-			/* child */
-			case 0:
-				builtinset(tokstr[1], tokstr[2]);
-				break;
-			case -1:
-				return -1;
-			/* parent */
-			default:
-				wait(NULL);
-				break;
-		}
-	} else {
-		switch(fork()) {
-			/* child */
-			case 0:
-				execvp(tokstr[0], &tokstr[1]);
+				if (*count > 1)
+					execvp(tokstr[0], &tokstr[1]);
+				else
+					execlp(tokstr[0], tokstr[0], NULL);
 				break;
 			case -1:
 				return -1;
