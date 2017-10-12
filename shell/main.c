@@ -3,6 +3,18 @@
 Tshellvar *shellvars[3];
 
 void
+printtokstr(char **tokstr, int *count) {
+	printf("printtokstr(): count = %d\ntokstr: ", *count);
+	for(int i = 0; i < *count; i++) {
+		printf("i = %d\n", i);
+		printf("%s", tokstr[i]);
+	}
+
+	printf("\n");
+	return;
+}
+
+void
 initshellvar(Tshellvar *vars[3]) {
 	for (int i = 0; i < 3; i++) {
 		vars[i] = malloc(sizeof(Tshellvar));
@@ -36,19 +48,21 @@ builtincd (char *dir) {
  * return -1 == failure but it prolly wont send this
  */
 int
-tokenize(char *str, int i, char **tokstr) {
+tokenize(char *str, int *i, char **tokstr) {
 	char *curtok;
 
+	printf("tokenize(): i = %d\n", *i);
 	curtok = strtok(str, " ");
-	tokstr[i] = curtok;
+	tokstr[*i] = curtok;
 	*tokstr++;
-	i++;
+	*i++;
 
 	for(;;i++) {
-		tokstr[i] = strtok(NULL, " ");
-		if (tokstr[i] == NULL)
+		tokstr[*i] = strtok(NULL, " ");
+		if (tokstr[*i] == NULL)
 			break;
 	}
+
 	return 0;
 }
 
@@ -107,12 +121,10 @@ builtinhelp(void) {
  * TODO: does it really need to be this big
  */
 int
-parse(char **tokstr) {
-	printf("parsing ");
-	for(int i = 0; **tokstr != NULL; i++){
-		printf("%s", tokstr[i]);
-	}
-	printf("\n");
+parse(char **tokstr, int *count) {
+	printf("parse(): count = %d\n", *count);
+	printtokstr(tokstr, count);
+	
 	if (strcmp(tokstr[0], "cd") == 0) {
 		switch(fork()) {
 			/* child */
@@ -193,11 +205,11 @@ main(int argc, char **argv) {
 	char *promptline;
 	char *args[ARGSIZE];
 	char **tokstr;
-	int count;
+	int *count;
 
 	initshellvar(shellvars);
 	while (1) {
-		count = 0;
+		count = malloc(sizeof(int));
 		promptline = malloc(PROMPTLINE * sizeof(char));
 		tokstr = malloc(ARGSIZE * sizeof(char*));
 
@@ -205,6 +217,7 @@ main(int argc, char **argv) {
 			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 		}
 
+		*count = 0;
 		strcpy(shellvars[0]->val, "$");
 		printf("%s ", shellvars[0]->val);
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
@@ -212,19 +225,20 @@ main(int argc, char **argv) {
 
 		promptline[strcspn(promptline, "\n")] = 0;
 		if (tokenize(promptline, count, tokstr) == -1)
-			return -1;
-		
-		if(parse(tokstr))
-			break;
+			goto Free;
+
+		if(parse(tokstr, count))
+			goto Free;
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
-	for (int i = 0; i < 3; i++)
-		free(shellvars[i]);
-	free(shellvars);
-	free(promptline);	
-	for (int i = 0; i < ARGSIZE; i++)
-		free(tokstr[i]);
-	free(tokstr);
+	Free:
+		for (int i = 0; i < 3; i++)
+			free(shellvars[i]);
+		free(shellvars);
+		free(promptline);	
+		for (int i = 0; i < ARGSIZE; i++)
+			free(tokstr[i]);
+		free(tokstr);
 	return 0;
 }
