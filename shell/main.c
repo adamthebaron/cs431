@@ -160,6 +160,17 @@ parse(char **tokstr, int *count) {
 	return 0;
 }
 
+void
+freeall(int count, ...) {
+	va_list list;
+	char *ptr;
+
+	va_start(list, count);
+	
+	for (int i = 0; i < count, i++) {
+	}
+}
+
 int
 main(int argc, char **argv) {
 	char *promptline;
@@ -185,20 +196,14 @@ main(int argc, char **argv) {
 
 		promptline[strcspn(promptline, "\n")] = 0;
 		if (tokenize(promptline, count, tokstr) == -1)
-			goto Free;
+			freeall(3, shellvars, promptline, tokstr);
+			break;
 
 		if(parse(tokstr, count))
-			goto Free;
+			freeall(3, shellvars, promptline, tokstr);
+			break;
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
-	Free:
-		for (int i = 0; i < 3; i++)
-			free(shellvars[i]);
-		free(shellvars);
-		free(promptline);	
-		for (int i = 0; i < ARGSIZE; i++)
-			free(tokstr[i]);
-		free(tokstr);
 	return 0;
 }
