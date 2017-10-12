@@ -8,6 +8,7 @@
 
 #define PROMPTLINE 65536
 #define ARGSIZE 1024
+#define HISTSIZE 4096
 
 const char *builtin[] = {
 	"cd",
@@ -45,8 +46,8 @@ Tshellvar *defshellvar[3] = {
 
 int builtincd(char *dir);
 int builtinecho(char **args);
-int builtinhelp(void);
-int builtinset(char *p, char *s);
+void builtinhelp(void);
+void builtinset(char *p, char *s);
 int tokenize(char *str, int count, char **tokstr);
 void initshellvar(Tshellvar *vars[3]);
 void about(void);

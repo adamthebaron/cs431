@@ -1,4 +1,6 @@
-#include "main.h"
+#include "shell.h"
+
+Tshellvar *shellvars[3];
 
 void
 initshellvar(Tshellvar *vars[3]) {
@@ -53,9 +55,20 @@ tokenize(char *str, int i, char **tokstr) {
 /* builtinset stores val v in
  * shell variable k
  */
-int
-builtinset(char *v, char *k) {
-
+void
+builtinset(char *k, char *v) {
+	switch(*k) {
+		case 'P':
+			strcpy(shellvars[0]->val, v);
+			break;
+		case 'H':
+			strcpy(shellvars[1]->val, v);
+			break;
+		case 'C':
+			strcpy(shellvars[2]->val, v);
+			break;
+	}
+	return;
 }
 
 /* builtinecho prints args to stdout
@@ -67,9 +80,23 @@ builtinecho(char **args) {
 
 /* builtinhelp prints help to stdout
  */
-int
+void
 builtinhelp(void) {
+	printf("built in programs:\n \
+	help: prints this help output\n \
+	cd: change dir to arg, or HOME if no arg is passed\n \
+	echo: echoes any args to stdout\n \
+	exit: quit shell\n \
+	set: set shell vars (PROMPT HOME COLOR)\n \
+	env:\n \
+		PROMPT: %s\n \
+		HOME: %s\n \
+		COLOR: %s\n \
+				  made by adam\n", shellvars[0]->val,
+								   shellvars[1]->val,
+								   shellvars[2]->val);
 
+	return;
 }
 
 /* parse parses the tokens and executes
@@ -81,15 +108,17 @@ builtinhelp(void) {
  */
 int
 parse(char **tokstr) {
-	printf("parsing out %s newline\n", tokstr[0]);
+	printf("parsing ");
+	for(int i = 0; **tokstr != NULL; i++){
+		printf("%s", tokstr[i]);
+	}
+	printf("\n");
 	if (strcmp(tokstr[0], "cd") == 0) {
-		printf("calling builtincd\n");
 		switch(fork()) {
 			/* child */
 			case 0:
-				printf("builtincd is passed %s\n", tokstr[1]);
 				tokstr[1] == NULL ? 
-					builtincd(getenv("HOME")) : 
+					builtincd(shellvars[1]->val) : 
 				builtincd(tokstr[1]);
 				break;
 			case -1:
@@ -100,7 +129,6 @@ parse(char **tokstr) {
 				break;
 		}
 	} else if (strcmp(tokstr[0], "echo") == 0) {
-		printf("calling builtinecho\n");
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -114,10 +142,8 @@ parse(char **tokstr) {
 				break;
 		}
 	} else if (strcmp(tokstr[0], "exit") == 0) {
-		printf("calling builtinexit\n");
 		return 1;
 	} else if (strcmp(tokstr[0], "help") == 0) {
-		printf("calling builtinhelp\n");
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -131,11 +157,12 @@ parse(char **tokstr) {
 				break;
 		}
 	} else if (strcmp(tokstr[0], "set") == 0) {
-		printf("calling builtinset\n");
 		switch(fork()) {
+			printf("calling builtinset with %s %s %s\n",
+					tokstr[0], tokstr[1], tokstr[2]);
 			/* child */
 			case 0:
-				//builtinset(tokstr[1]);
+				builtinset(tokstr[1], tokstr[2]);
 				break;
 			case -1:
 				return -1;
@@ -145,7 +172,6 @@ parse(char **tokstr) {
 				break;
 		}
 	} else {
-		printf("calling %s\n", tokstr[0]);
 		switch(fork()) {
 			/* child */
 			case 0:
@@ -159,29 +185,28 @@ parse(char **tokstr) {
 				break;
 		}
 	}
+	return 0;
 }
 
 int
 main(int argc, char **argv) {
-	char *prompt, *promptline;
+	char *promptline;
 	char *args[ARGSIZE];
 	char **tokstr;
 	int count;
-	Tshellvar *shellvars[3];
 
 	initshellvar(shellvars);
 	while (1) {
 		count = 0;
 		promptline = malloc(PROMPTLINE * sizeof(char));
-		prompt = malloc(ARGSIZE * sizeof(char));
 		tokstr = malloc(ARGSIZE * sizeof(char*));
 
 		for (int i = 0; i < ARGSIZE; ++i) {
 			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 		}
 
-		strcpy(prompt, "$");
-		printf("%s ", prompt);
+		strcpy(shellvars[0]->val, "$");
+		printf("%s ", shellvars[0]->val);
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
 
@@ -189,15 +214,14 @@ main(int argc, char **argv) {
 		if (tokenize(promptline, count, tokstr) == -1)
 			return -1;
 		
-		if(parse(tokstr) == -1)
-			return -1;
+		if(parse(tokstr))
+			break;
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
 	for (int i = 0; i < 3; i++)
 		free(shellvars[i]);
 	free(shellvars);
-	free(prompt);
 	free(promptline);	
 	for (int i = 0; i < ARGSIZE; i++)
 		free(tokstr[i]);

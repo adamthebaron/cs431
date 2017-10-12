@@ -1,0 +1,2 @@
+command script import /home/apk/src/git/cs431/shell/parry.py
+command script add --function parry.parry parry
