@@ -6,7 +6,7 @@ void
 printtokstr(char **tokstr, int *count) {
 	printf("count = %d\ntokstr: ", *count);
 	for(int i = 0; i < *count; i++) {
-		printf("%s", tokstr[i]);
+		printf("%s ", tokstr[i]);
 	}
 
 	printf("\n");
@@ -68,17 +68,12 @@ tokenize(char *str, int *i, char **tokstr) {
  */
 void
 builtinset(char *k, char *v) {
-	switch(*k) {
-		case 'P':
-			strcpy(shellvars[0]->val, v);
-			break;
-		case 'H':
-			strcpy(shellvars[1]->val, v);
-			break;
-		case 'C':
-			strcpy(shellvars[2]->val, v);
-			break;
-	}
+	if (!strcmp("PROMPT", k))
+		strcpy(shellvars[0]->val, v);
+	else if (!strcmp("HOME", k))
+		strcpy(shellvars[1]->val, v);
+	else if (!strcmp("COLOR", k))
+		strcpy(shellvars[2]->val, v);
 	return;
 }
 
@@ -118,7 +113,7 @@ builtinhelp(void) {
  */
 int
 parse(char **tokstr, int *count) {
-	//printtokstr(tokstr, count);
+	printtokstr(tokstr, count);
 	
 	if (!strcmp(tokstr[0], "cd"))
 		tokstr[1] == NULL ? 
@@ -160,17 +155,6 @@ parse(char **tokstr, int *count) {
 	return 0;
 }
 
-void
-freeall(int count, ...) {
-	va_list list;
-	char *ptr;
-
-	va_start(list, count);
-	
-	for (int i = 0; i < count, i++) {
-	}
-}
-
 int
 main(int argc, char **argv) {
 	char *promptline;
@@ -179,6 +163,7 @@ main(int argc, char **argv) {
 	int *count;
 
 	initshellvar(shellvars);
+
 	while (1) {
 		count = malloc(sizeof(int));
 		promptline = malloc(PROMPTLINE * sizeof(char));
@@ -186,6 +171,7 @@ main(int argc, char **argv) {
 
 		for (int i = 0; i < ARGSIZE; ++i) {
 			tokstr[i] = malloc(ARGSIZE * sizeof(char));
+			args[i] = malloc(ARGSIZE * sizeof(char));
 		}
 
 		*count = 0;
@@ -196,14 +182,21 @@ main(int argc, char **argv) {
 
 		promptline[strcspn(promptline, "\n")] = 0;
 		if (tokenize(promptline, count, tokstr) == -1)
-			freeall(3, shellvars, promptline, tokstr);
-			break;
+			goto Free;
 
 		if(parse(tokstr, count))
-			freeall(3, shellvars, promptline, tokstr);
-			break;
+			goto Free;
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
+	Free:
+		for (int i = 0; i < ARGSIZE; i++) {
+			free(args[i]);
+			free(tokstr[i]);
+		}
+		free(args);
+		free(tokstr);
+		free(promptline);
+		free(count);
 	return 0;
 }
