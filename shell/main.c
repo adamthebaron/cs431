@@ -82,11 +82,8 @@ builtinset(char *k, char *v) {
  */
 void
 builtinecho(char **args, int count) {
-	for (int i = 0; i < count; i++)
-		if (args[i] == NULL)
-			continue;
-		else
-			printf("%s ", args[i]);
+	for (int i = 0; i < count && args[i] != NULL; i++)
+		printf("%s ", args[i]);
 	printf("\n");
 	return;
 }
@@ -147,10 +144,10 @@ parse(char **tokstr, int *count) {
 			/* child */
 			case 0:
 				if (*count > 1)
-					if (execvp(tokstr[0], &tokstr[1]) == -1)
+					if (execvp(tokstr[0], tokstr) == -1)
 						sprintf(stderr, "execvp: %s\n", strerror(errno));
 				else
-					if (execlp(tokstr[0], tokstr[0], NULL) == -1)
+					if (execlp(tokstr[0], tokstr[0], (char *) NULL) == -1)
 						sprintf(stderr, "execlp: %s\n", strerror(errno));
 				break;
 			case -1:
@@ -172,19 +169,19 @@ main(int argc, char **argv) {
 	int *count;
 
 	initshellvar(shellvars);
+	strcpy(shellvars[0]->val, "$");
 
 	while (1) {
-		count = malloc(sizeof(int));
-		promptline = malloc(PROMPTLINE * sizeof(char));
-		tokstr = malloc(ARGSIZE * sizeof(char*));
+		count = (int*) malloc(sizeof(int));
+		promptline = (char*) malloc(PROMPTLINE * sizeof(char));
+		tokstr = (char**) malloc(ARGSIZE * sizeof(char*));
 
 		for (int i = 0; i < ARGSIZE; ++i) {
-			tokstr[i] = malloc(ARGSIZE * sizeof(char));
-			args[i] = malloc(ARGSIZE * sizeof(char));
+			tokstr[i] = (char*) malloc(ARGSIZE * sizeof(char));
+			args[i] = (char*) malloc(ARGSIZE * sizeof(char));
 		}
 
 		*count = 0;
-		strcpy(shellvars[0]->val, "$");
 		printf("%s ", shellvars[0]->val);
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
@@ -195,17 +192,27 @@ main(int argc, char **argv) {
 
 		if(parse(tokstr, count))
 			goto Free;
+		
+		/*Free:
+			for (int i = 0; i < ARGSIZE; i++) {
+				free(args[i]);
+				free(tokstr[i]);
+			}
+			free(args);
+			free(tokstr);
+			free(promptline);
+			free(count);*/
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
 	Free:
-		for (int i = 0; i < ARGSIZE; i++) {
-			free(args[i]);
-			free(tokstr[i]);
-		}
-		free(args);
-		free(tokstr);
-		free(promptline);
-		free(count);
+	for (int i = 0; i < ARGSIZE; i++) {
+		free(args[i]);
+		free(tokstr[i]);
+	}
+	free(args);
+	free(tokstr);
+	free(promptline);
+	free(count);
 	return 0;
 }
