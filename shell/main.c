@@ -33,6 +33,7 @@ initshellvar(Tshellvar *vars[3]) {
  * return 0 == success
  * return -1 == failure
  */
+int
 builtincd (char *dir) {
 	if (chdir(dir) == -1) {
 		sprintf(stderr, "builtincd(): %s\n", strerror(errno));
@@ -79,9 +80,15 @@ builtinset(char *k, char *v) {
 
 /* builtinecho prints args to stdout
  */
-int
-builtinecho(char **args) {
-
+void
+builtinecho(char **args, int count) {
+	for (int i = 0; i < count; i++)
+		if (args[i] == NULL)
+			continue;
+		else
+			printf("%s ", args[i]);
+	printf("\n");
+	return;
 }
 
 /* builtinhelp prints help to stdout
@@ -121,7 +128,7 @@ parse(char **tokstr, int *count) {
 		builtincd(tokstr[1]);
 
 	else if (!strcmp(tokstr[0], "echo"))
-		builtinecho(&tokstr[1]);
+		builtinecho(&tokstr[1], *count);
 	
 	else if (!strcmp(tokstr[0], "exit"))
 		return 1;
@@ -140,9 +147,11 @@ parse(char **tokstr, int *count) {
 			/* child */
 			case 0:
 				if (*count > 1)
-					execvp(tokstr[0], &tokstr[1]);
+					if (execvp(tokstr[0], &tokstr[1]) == -1)
+						sprintf(stderr, "execvp: %s\n", strerror(errno));
 				else
-					execlp(tokstr[0], tokstr[0], NULL);
+					if (execlp(tokstr[0], tokstr[0], NULL) == -1)
+						sprintf(stderr, "execlp: %s\n", strerror(errno));
 				break;
 			case -1:
 				return -1;

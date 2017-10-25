@@ -52,7 +52,7 @@ Tshellvar *defshellvar[3] = {
 };
 
 int builtincd(char *dir);
-int builtinecho(char **args);
+void builtinecho(char **args, int count);
 void builtinhelp(void);
 void builtinset(char *p, char *s);
 int tokenize(char *str, int *count, char **tokstr);
