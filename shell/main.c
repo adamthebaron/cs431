@@ -28,6 +28,17 @@ inittcmds(void) {
 }
 
 void
+clearcmds(void) {
+	for (int i = 0; i < curtcmd; i++) {
+		for (int j = 0; j < tcmds[i]->argc; j++) {
+			printf("clearing %s of size %d\n", tcmds[i]->args[j], strlen(tcmds[i]->args[j]));
+			memcpy(tcmds[i]->args[j], 0, strlen(tcmds[i]->args[j]));
+		}
+		memcpy(tcmds[i]->base, 0, strlen(tcmds[i]->base));
+	}
+}
+
+void
 initshellvars(void) {
 	for (int i = 0; i < 2; i++) {
 		shellvars[i] = malloc(sizeof(Tshellvar));
@@ -59,20 +70,22 @@ void
 tokcmd(char *cmd) {
 	char *cur;
 
-	printf("tokcmd: %s\n", cmd);
 	cur = strtok(cmd, " ");
 	tcmds[curtcmd]->base = cur;
+	printf("base: %s\n", tcmds[curtcmd]->base);
 	tcmds[curtcmd]->args[curarg++] = cur;
 	forever {
 		tcmds[curtcmd]->args[curarg] = strtok(NULL, " ");
-		printf("tokcmd: %s\n", tcmds[curtcmd]->args[curarg]);
+		printf("arg: %s\n", tcmds[curtcmd]->args[curarg]);
 		if (tcmds[curtcmd]->args[curarg] == NULL)
 			break;
 		curarg++;
 	}
 	tcmds[curtcmd]->argc = curarg;
+	printf("number of args: %d\n", tcmds[curtcmd]->argc);
 	curarg = 0;
 	curtcmd++;
+	printf("curtcmd is now %d\n", curtcmd);
 	return;
 }
 
@@ -81,22 +94,24 @@ tokcmd(char *cmd) {
  * return -1 == failure but it prolly wont send this
  */
 int
-tokline(char *str, int *i) {
+tokline(char *str) {
 	char *curcmd, *cmd;
 
+	curcmd = malloc(ARGSIZE * sizeof(char));
 	printf("tokenizing: %s\n", str);
 	cmd = strtok(str, ";");
-	curcmd = cmd;
+	strcpy(curcmd, cmd);
 	printf("found command: %s\n", curcmd);
 	tokcmd(curcmd);
 
-	while((cmd = strtok(NULL, "; ")) != NULL) {
+	while((cmd = strtok(NULL, ";")) != NULL) {
 		printf("tokenizing: %s\n", cmd);
-		curcmd = cmd;
+		strcpy(curcmd, cmd);
 		printf("found command: %s\n", curcmd);
 		tokcmd(curcmd);
 	}
 
+	free(curcmd);
 	return 0;
 }
 
@@ -149,6 +164,8 @@ builtinhelp(void) {
  */
 int
 parse(Tcmd *tcmd) {
+	printf("parsing ");
+	printtcmd(tcmd);
 	if (!strcmp(tcmd->base, "cd"))
 		tcmd->args[1] == NULL ? 
 			builtincd(shellvars[1]->val) : 
@@ -195,7 +212,6 @@ int
 main(int argc, char **argv) {
 	char *promptline;
 	char **tokstr;
-	int *count;
 
 	initshellvars();
 	inittcmds();
@@ -204,21 +220,18 @@ main(int argc, char **argv) {
 
 	forever {
 		curtcmd = 0;
-		inittcmds();
-		count = malloc(sizeof(int));
 		promptline = malloc(PROMPTLINE * sizeof(char));
 		tokstr = malloc(ARGSIZE * sizeof(char*));
 
 		for (int i = 0; i < ARGSIZE; ++i)
 			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 
-		*count = 0;
 		printf("%s ", shellvars[0]->val);
 		if (fgets(promptline, PROMPTLINE, stdin) == NULL)
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
 
 		promptline[strcspn(promptline, "\n")] = 0;
-		if (tokline(promptline, count) == -1)
+		if (tokline(promptline) == -1)
 			exit(0);
 
 		printf("cmds: %d\n", curtcmd);
@@ -228,5 +241,6 @@ main(int argc, char **argv) {
 			if(parse(tcmds[i]))
 				exit(0);
 		}
+		clearcmds();
 	}
 }
