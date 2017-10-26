@@ -10,6 +10,7 @@
 #define PROMPTLINE 65536
 #define ARGSIZE 1024
 #define HISTSIZE 4096
+#define forever for(;;)
 
 #define type(x) _Generic((x), \
 	int*:	"int*", \
@@ -36,6 +37,12 @@ typedef struct tshellvar {
 	char *val;
 } Tshellvar;
 
+typedef struct tcmd {
+	char *base;
+	char **args;
+	int argc;
+} Tcmd;
+
 Tshellvar *defshellvar[3] = {
 	{
 		"PROMPT",
@@ -56,8 +63,10 @@ void builtinecho(char **args, int count);
 void builtinhelp(void);
 void builtinset(char *p, char *s);
 int tokenize(char *str, int *count, char **tokstr);
-void initshellvar(Tshellvar *vars[3]);
+void initshellvars(void);
+void inittargs(void);
+void tokcmd(char *cmd);
 void about(void);
-void printtokstr(char **tokstr, int *count);
+void printtcmd(Tcmd *cmd);
 void freeall(int count, ...);
 int main(int argc, char **argv);

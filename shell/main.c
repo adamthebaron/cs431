@@ -1,30 +1,44 @@
 #include "shell.h"
 
 Tshellvar *shellvars[3];
+Tcmd *tcmds[32];
+int curarg;
+int curtcmd;
 
 void
-printtokstr(char **tokstr, int *count) {
-	printf("count = %d\ntokstr: ", *count);
-	for(int i = 0; i < *count; i++) {
-		printf("%s ", tokstr[i]);
+printtcmd(Tcmd *cmd) {
+	printf("argc = %d\tcmd: ", cmd->argc);
+	printf("%s args: ", cmd->base);
+	for(int i = 0; i < cmd->argc; i++) {
+		printf("%s ", cmd->args[i]);
 	}
-
 	printf("\n");
 	return;
 }
 
 void
-initshellvar(Tshellvar *vars[3]) {
+inittcmds(void) {
+	for (int i = 0; i < 32; i++) {
+		tcmds[i] = malloc(sizeof(Tcmd));
+		tcmds[i]->base = malloc(ARGSIZE * sizeof(char));
+		for(int j = 0; j < 32; j++)
+			tcmds[i]->args[i] = malloc(ARGSIZE * sizeof(char));
+	}
+	return;
+}
+
+void
+initshellvars(void) {
 	for (int i = 0; i < 3; i++) {
-		vars[i] = malloc(sizeof(Tshellvar));
-		vars[i]->name = malloc(ARGSIZE * sizeof(char));
-		vars[i]->val = malloc(ARGSIZE * sizeof(char));
-		strcpy(vars[i]->name, shellvarname[i]);
+		shellvars[i] = malloc(sizeof(Tshellvar));
+		shellvars[i]->name = malloc(ARGSIZE * sizeof(char));
+		shellvars[i]->val = malloc(ARGSIZE * sizeof(char));
+		strcpy(shellvars[i]->name, shellvarname[i]);
 	}
 
-	strcpy(vars[0]->val, "$");
-	strcpy(vars[1]->val, getenv("HOME"));
-	strcpy(vars[2]->val, "\x031");
+	strcpy(shellvars[0]->val, "$");
+	strcpy(shellvars[1]->val, getenv("HOME"));
+	strcpy(shellvars[2]->val, "\x031");
 	return;
 }
 
@@ -42,23 +56,42 @@ builtincd (char *dir) {
 	return 0;
 }
 
+void
+tokcmd(char *cmd) {
+	char *cur;
 
-/* tokenize tokenizes a string and places it in tokstr
+	cur = strtok(cmd, " ");
+	tcmds[curtcmd]->base = cur;
+	tcmds[curtcmd]->args[curarg++] = cur;
+	forever {
+		tcmds[curtcmd]->args[curarg] = strtok(NULL, " ");
+		if (tcmds[curtcmd]->args[curarg] == NULL)
+			break;
+		curarg++;
+	}
+	tcmds[curtcmd]->argc = curarg;
+	curarg = 0;
+	curtcmd++;
+	return;
+}
+
+
+/* tokline tokenizes a promptline and sends each cmd to tokcmd
  * return 0 == success
  * return -1 == failure but it prolly wont send this
  */
 int
-tokenize(char *str, int *i, char **tokstr) {
-	char *curtok;
+tokline(char *str, int *i) {
+	char *curcmd;
 
-	curtok = strtok(str, " ");
-	tokstr[*i] = curtok;
-	(*i)++;
+	curcmd = strtok(str, ";");
+	tokcmd(curcmd);
 
-	for(;;(*i)++) {
-		tokstr[*i] = strtok(NULL, " ");
-		if (tokstr[*i] == NULL)
+	forever {
+		curcmd = strtok(NULL, ";");
+		if (curcmd == NULL)
 			break;
+		tokcmd(curcmd);
 	}
 
 	return 0;
@@ -116,38 +149,38 @@ builtinhelp(void) {
  * return -1 == failure
  */
 int
-parse(char **tokstr, int *count) {
-	printtokstr(tokstr, count);
+parse(Tcmd *tcmd) {
+	printtcmd(tcmd);
 	
-	if (!strcmp(tokstr[0], "cd"))
-		tokstr[1] == NULL ? 
+	if (!strcmp(tcmd->base, "cd"))
+		tcmd->args[1] == NULL ? 
 			builtincd(shellvars[1]->val) : 
-		builtincd(tokstr[1]);
+		builtincd(tcmd->args[1]);
 
-	else if (!strcmp(tokstr[0], "echo"))
-		builtinecho(&tokstr[1], *count);
+	else if (!strcmp(tcmd->base, "echo"))
+		builtinecho(&tcmd->args[1], tcmd->argc);
 	
-	else if (!strcmp(tokstr[0], "exit"))
+	else if (!strcmp(tcmd->base, "exit"))
 		return 1;
 	
-	else if (!strcmp(tokstr[0], "help"))
+	else if (!strcmp(tcmd->base, "help"))
 		builtinhelp();
 	
-	else if (!strcmp(tokstr[0], "set"))
-		if (tokstr[1] == NULL || tokstr[2] == NULL)
+	else if (!strcmp(tcmd->base, "set"))
+		if (tcmd->args[1] == NULL || tcmd->args[2] == NULL)
 			return -1;
 		else
-			builtinset(tokstr[1], tokstr[2]);
+			builtinset(tcmd->args[1], tcmd->args[2]);
 	
 	else {
 		switch(fork()) {
 			/* child */
 			case 0:
-				if (*count > 1)
-					if (execvp(tokstr[0], tokstr) == -1)
+				if (tcmd->argc > 1)
+					if (execvp(tcmd->base, tcmd->args) == -1)
 						sprintf(stderr, "execvp: %s\n", strerror(errno));
 				else
-					if (execlp(tokstr[0], tokstr[0], (char *) NULL) == -1)
+					if (execlp(tcmd->base, tcmd->base, (char *) NULL) == -1)
 						sprintf(stderr, "execlp: %s\n", strerror(errno));
 				break;
 			case -1:
@@ -164,22 +197,22 @@ parse(char **tokstr, int *count) {
 int
 main(int argc, char **argv) {
 	char *promptline;
-	char *args[ARGSIZE];
 	char **tokstr;
 	int *count;
 
-	initshellvar(shellvars);
+	initshellvars();
+	inittcmds();
 	strcpy(shellvars[0]->val, "$");
+	curarg = 0;
+	curtcmd = 0;
 
-	while (1) {
-		count = (int*) malloc(sizeof(int));
-		promptline = (char*) malloc(PROMPTLINE * sizeof(char));
-		tokstr = (char**) malloc(ARGSIZE * sizeof(char*));
+	forever {
+		count = malloc(sizeof(int));
+		promptline = malloc(PROMPTLINE * sizeof(char));
+		tokstr = malloc(ARGSIZE * sizeof(char*));
 
-		for (int i = 0; i < ARGSIZE; ++i) {
-			tokstr[i] = (char*) malloc(ARGSIZE * sizeof(char));
-			args[i] = (char*) malloc(ARGSIZE * sizeof(char));
-		}
+		for (int i = 0; i < ARGSIZE; ++i)
+			tokstr[i] = malloc(ARGSIZE * sizeof(char));
 
 		*count = 0;
 		printf("%s ", shellvars[0]->val);
@@ -187,32 +220,21 @@ main(int argc, char **argv) {
 			sprintf(stderr, "fgets(): %s\n", strerror(errno));
 
 		promptline[strcspn(promptline, "\n")] = 0;
-		if (tokenize(promptline, count, tokstr) == -1)
+		if (tokline(promptline, count) == -1)
 			goto Free;
 
-		if(parse(tokstr, count))
-			goto Free;
-		
-		/*Free:
-			for (int i = 0; i < ARGSIZE; i++) {
-				free(args[i]);
-				free(tokstr[i]);
-			}
-			free(args);
-			free(tokstr);
-			free(promptline);
-			free(count);*/
+		for (int i = 0; i < curtcmd; i++)
+			if(parse(tcmds[i]))
+				goto Free;
 	}
 
 	//im gonna bomb like vietnam under the same name tame one
 	Free:
-	for (int i = 0; i < ARGSIZE; i++) {
-		free(args[i]);
-		free(tokstr[i]);
-	}
-	free(args);
-	free(tokstr);
-	free(promptline);
-	free(count);
+		for (int i = 0; i < ARGSIZE; i++)
+			free(tokstr[i]);
+
+		free(tokstr);
+		free(promptline);
+		free(count);
 	return 0;
 }
