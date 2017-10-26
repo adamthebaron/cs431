@@ -28,8 +28,7 @@ const char *builtin[] = {
 
 const char *shellvarname[] = {
 	"PROMPT",
-	"HOME",
-	"COLOR"
+	"HOME"
 };
 
 typedef struct tshellvar {
@@ -39,21 +38,17 @@ typedef struct tshellvar {
 
 typedef struct tcmd {
 	char *base;
-	char **args;
+	char *args[ARGSIZE];
 	int argc;
 } Tcmd;
 
-Tshellvar *defshellvar[3] = {
+Tshellvar *defshellvar[2] = {
 	{
 		"PROMPT",
 		"$"
 	},
 	{
 		"HOME",
-		""
-	},
-	{
-		"COLOR",
 		""
 	}
 };

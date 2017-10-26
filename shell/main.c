@@ -22,14 +22,14 @@ inittcmds(void) {
 		tcmds[i] = malloc(sizeof(Tcmd));
 		tcmds[i]->base = malloc(ARGSIZE * sizeof(char));
 		for(int j = 0; j < 32; j++)
-			tcmds[i]->args[i] = malloc(ARGSIZE * sizeof(char));
+			tcmds[i]->args[j] = malloc(ARGSIZE * sizeof(char));
 	}
 	return;
 }
 
 void
 initshellvars(void) {
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 2; i++) {
 		shellvars[i] = malloc(sizeof(Tshellvar));
 		shellvars[i]->name = malloc(ARGSIZE * sizeof(char));
 		shellvars[i]->val = malloc(ARGSIZE * sizeof(char));
@@ -38,7 +38,6 @@ initshellvars(void) {
 
 	strcpy(shellvars[0]->val, "$");
 	strcpy(shellvars[1]->val, getenv("HOME"));
-	strcpy(shellvars[2]->val, "\x031");
 	return;
 }
 
@@ -75,7 +74,6 @@ tokcmd(char *cmd) {
 	return;
 }
 
-
 /* tokline tokenizes a promptline and sends each cmd to tokcmd
  * return 0 == success
  * return -1 == failure but it prolly wont send this
@@ -84,13 +82,17 @@ int
 tokline(char *str, int *i) {
 	char *curcmd;
 
+	printf("tokenizing: %s\n", str);
 	curcmd = strtok(str, ";");
+	printf("found command: %s\n", curcmd);
 	tokcmd(curcmd);
 
 	forever {
+		printf("tokenizing: %s\n", str);
 		curcmd = strtok(NULL, ";");
 		if (curcmd == NULL)
 			break;
+		printf("found command: %s\n", curcmd);
 		tokcmd(curcmd);
 	}
 
@@ -106,8 +108,6 @@ builtinset(char *k, char *v) {
 		strcpy(shellvars[0]->val, v);
 	else if (!strcmp("HOME", k))
 		strcpy(shellvars[1]->val, v);
-	else if (!strcmp("COLOR", k))
-		strcpy(shellvars[2]->val, v);
 	return;
 }
 
@@ -134,10 +134,8 @@ builtinhelp(void) {
 	env:\n \
 		PROMPT: %s\n \
 		HOME:   %s\n \
-		COLOR:  %s\n \
 				  made by adam\n", shellvars[0]->val,
-								   shellvars[1]->val,
-								   shellvars[2]->val);
+								   shellvars[1]->val);
 
 	return;
 }
@@ -150,8 +148,6 @@ builtinhelp(void) {
  */
 int
 parse(Tcmd *tcmd) {
-	printtcmd(tcmd);
-	
 	if (!strcmp(tcmd->base, "cd"))
 		tcmd->args[1] == NULL ? 
 			builtincd(shellvars[1]->val) : 
@@ -204,9 +200,10 @@ main(int argc, char **argv) {
 	inittcmds();
 	strcpy(shellvars[0]->val, "$");
 	curarg = 0;
-	curtcmd = 0;
 
 	forever {
+		curtcmd = 0;
+		inittcmds();
 		count = malloc(sizeof(int));
 		promptline = malloc(PROMPTLINE * sizeof(char));
 		tokstr = malloc(ARGSIZE * sizeof(char*));
@@ -221,20 +218,14 @@ main(int argc, char **argv) {
 
 		promptline[strcspn(promptline, "\n")] = 0;
 		if (tokline(promptline, count) == -1)
-			goto Free;
+			exit(0);
 
-		for (int i = 0; i < curtcmd; i++)
+		printf("cmds: %d\n", curtcmd);
+		for (int i = 0; i < curtcmd; i++) {
+			printf("k parsing ");
+			printtcmd(tcmds[i]);
 			if(parse(tcmds[i]))
-				goto Free;
+				exit(0);
+		}
 	}
-
-	//im gonna bomb like vietnam under the same name tame one
-	Free:
-		for (int i = 0; i < ARGSIZE; i++)
-			free(tokstr[i]);
-
-		free(tokstr);
-		free(promptline);
-		free(count);
-	return 0;
 }
