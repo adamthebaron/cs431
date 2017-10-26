@@ -59,11 +59,13 @@ void
 tokcmd(char *cmd) {
 	char *cur;
 
+	printf("tokcmd: %s\n", cmd);
 	cur = strtok(cmd, " ");
 	tcmds[curtcmd]->base = cur;
 	tcmds[curtcmd]->args[curarg++] = cur;
 	forever {
 		tcmds[curtcmd]->args[curarg] = strtok(NULL, " ");
+		printf("tokcmd: %s\n", tcmds[curtcmd]->args[curarg]);
 		if (tcmds[curtcmd]->args[curarg] == NULL)
 			break;
 		curarg++;
@@ -80,18 +82,17 @@ tokcmd(char *cmd) {
  */
 int
 tokline(char *str, int *i) {
-	char *curcmd;
+	char *curcmd, *cmd;
 
 	printf("tokenizing: %s\n", str);
-	curcmd = strtok(str, ";");
+	cmd = strtok(str, ";");
+	curcmd = cmd;
 	printf("found command: %s\n", curcmd);
 	tokcmd(curcmd);
 
-	forever {
-		printf("tokenizing: %s\n", str);
-		curcmd = strtok(NULL, ";");
-		if (curcmd == NULL)
-			break;
+	while((cmd = strtok(NULL, "; ")) != NULL) {
+		printf("tokenizing: %s\n", cmd);
+		curcmd = cmd;
 		printf("found command: %s\n", curcmd);
 		tokcmd(curcmd);
 	}
