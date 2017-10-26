@@ -53,6 +53,11 @@ Tshellvar *defshellvar[2] = {
 	}
 };
 
+extern Tshellvar *shellvars[3];
+extern Tcmd *tcmds[32];
+extern int curarg;
+extern int curtcmd;
+
 int builtincd(char *dir);
 void builtinecho(char **args, int count);
 void builtinhelp(void);

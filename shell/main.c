@@ -1,10 +1,5 @@
 #include "shell.h"
 
-Tshellvar *shellvars[3];
-Tcmd *tcmds[32];
-int curarg;
-int curtcmd;
-
 void
 printtcmd(Tcmd *cmd) {
 	printf("argc = %d\tcmd: ", cmd->argc);
@@ -31,7 +26,6 @@ void
 clearcmds(void) {
 	for (int i = 0; i < curtcmd; i++) {
 		for (int j = 0; j < tcmds[i]->argc; j++) {
-			printf("clearing %s of size %d\n", tcmds[i]->args[j], strlen(tcmds[i]->args[j]));
 			memcpy(tcmds[i]->args[j], 0, strlen(tcmds[i]->args[j]));
 		}
 		memcpy(tcmds[i]->base, 0, strlen(tcmds[i]->base));
@@ -52,110 +46,6 @@ initshellvars(void) {
 	return;
 }
 
-/* builtincd moves cwd from cwd to dir,
- * or $HOME if NULL.
- * return 0 == success
- * return -1 == failure
- */
-int
-builtincd (char *dir) {
-	if (chdir(dir) == -1) {
-		sprintf(stderr, "builtincd(): %s\n", strerror(errno));
-		return -1;
-	}
-	return 0;
-}
-
-void
-tokcmd(char *cmd) {
-	char *cur;
-
-	cur = strtok(cmd, " ");
-	tcmds[curtcmd]->base = cur;
-	printf("base: %s\n", tcmds[curtcmd]->base);
-	tcmds[curtcmd]->args[curarg++] = cur;
-	forever {
-		tcmds[curtcmd]->args[curarg] = strtok(NULL, " ");
-		printf("arg: %s\n", tcmds[curtcmd]->args[curarg]);
-		if (tcmds[curtcmd]->args[curarg] == NULL)
-			break;
-		curarg++;
-	}
-	tcmds[curtcmd]->argc = curarg;
-	printf("number of args: %d\n", tcmds[curtcmd]->argc);
-	curarg = 0;
-	curtcmd++;
-	printf("curtcmd is now %d\n", curtcmd);
-	return;
-}
-
-/* tokline tokenizes a promptline and sends each cmd to tokcmd
- * return 0 == success
- * return -1 == failure but it prolly wont send this
- */
-int
-tokline(char *str) {
-	char *curcmd, *cmd;
-
-	curcmd = malloc(ARGSIZE * sizeof(char));
-	printf("tokenizing: %s\n", str);
-	cmd = strtok(str, ";");
-	strcpy(curcmd, cmd);
-	printf("found command: %s\n", curcmd);
-	tokcmd(curcmd);
-
-	while((cmd = strtok(NULL, ";")) != NULL) {
-		printf("tokenizing: %s\n", cmd);
-		strcpy(curcmd, cmd);
-		printf("found command: %s\n", curcmd);
-		tokcmd(curcmd);
-	}
-
-	free(curcmd);
-	return 0;
-}
-
-/* builtinset stores val v in
- * shell variable k
- */
-void
-builtinset(char *k, char *v) {
-	if (!strcmp("PROMPT", k))
-		strcpy(shellvars[0]->val, v);
-	else if (!strcmp("HOME", k))
-		strcpy(shellvars[1]->val, v);
-	return;
-}
-
-/* builtinecho prints args to stdout
- */
-void
-builtinecho(char **args, int count) {
-	for (int i = 0; i < count && args[i] != NULL; i++)
-		printf("%s ", args[i]);
-	printf("\n");
-	return;
-}
-
-/* builtinhelp prints help to stdout
- */
-void
-builtinhelp(void) {
-	printf("built in programs:\n \
-	help: prints this help output\n \
-	cd: change dir to arg, or HOME if no arg is passed\n \
-	echo: echoes any args to stdout\n \
-	exit: quit shell\n \
-	set: set shell vars (PROMPT HOME COLOR)\n \
-	env:\n \
-		PROMPT: %s\n \
-		HOME:   %s\n \
-				  made by adam\n", shellvars[0]->val,
-								   shellvars[1]->val);
-
-	return;
-}
-
 /* parse parses the tokens and executes
  * subprocesses accordingly
  * return 1 == exit shell
@@ -167,8 +57,8 @@ parse(Tcmd *tcmd) {
 	printf("parsing ");
 	printtcmd(tcmd);
 	if (!strcmp(tcmd->base, "cd"))
-		tcmd->args[1] == NULL ? 
-			builtincd(shellvars[1]->val) : 
+		tcmd->args[1] == NULL ?
+			builtincd(shellvars[1]->val) :
 		builtincd(tcmd->args[1]);
 
 	else if (!strcmp(tcmd->base, "echo"))
@@ -185,7 +75,7 @@ parse(Tcmd *tcmd) {
 			return -1;
 		else
 			builtinset(tcmd->args[1], tcmd->args[2]);
-	
+
 	else {
 		switch(fork()) {
 			/* child */
@@ -234,10 +124,8 @@ main(int argc, char **argv) {
 		if (tokline(promptline) == -1)
 			exit(0);
 
-		printf("cmds: %d\n", curtcmd);
 		for (int i = 0; i < curtcmd; i++) {
-			printf("k parsing ");
-			printtcmd(tcmds[i]);
+			printf("parsing %d commands\n", curtcmd);
 			if(parse(tcmds[i]))
 				exit(0);
 		}
